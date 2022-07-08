@@ -44,7 +44,7 @@ jobs:
         # This RELEASER_TOKEN is an org secret that allows the action to run as kurtosisbot
         # This is needed because kurtosisbot is the only one able to bypass branche protection rules and
         # commit straight to master
-        run: kudet release ${{ secrets.RELEASER_TOKEN }}
+        run: kudet release ${{ secrets.RELEASER_TOKEN }} --bump-major
       - name: Execute the release without bumping major
         if: inputs.bump_major == false && steps.checkMemberRole.outputs.isTeamMember == 'true'
         run: kudet release ${{ secrets.RELEASER_TOKEN }}
