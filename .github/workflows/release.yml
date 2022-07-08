@@ -1,0 +1,54 @@
+name: Release Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_major:
+        description: 'Do you want to bump the major version on this release?'
+        required: true
+        type: boolean
+      GITHUB_TOKEN:
+        description: 'Token that has necessary permissions to execute release.'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Kudet
+        run: |
+          echo "deb [trusted=yes] https://apt.fury.io/kurtosis-tech/ /" | sudo tee /etc/apt/sources.list.d/kurtosis.list
+          sudo apt update
+          sudo apt install kudet
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ## This is needed, or else the fetch step in kudet release will error with 'empty git-upload-pack given`
+          fetch-depth: 0
+      - name: Setup Git Config
+        # kudet release requires an email for the commit message, so we pass kurtosis tech email
+        run: |
+          git config --global user.name ${{ github.actor }}
+          git config --global user.email "hello@kurtosistech.com"
+      - name: Check that user running Github action has proper role
+        id: checkMemberRole
+        # We use a very specific commit hash of this github action ensuring we are running the same code every time
+        # This makes sure github doesn't automatically update the github action, potentially exposing us to supply chain attacks
+        # tspascoal/get-user-teams-membership@f7435257091e582354c44b55b296edf65be35700
+        uses: tspascoal/get-user-teams-membership@f7435257091e582354c44b55b296edf65be35700
+        with:
+          username: ${{ github.actor }}
+          team: 'engineers'
+          GITHUB_TOKEN: ${{ secrets.RELEASER_TOKEN }}
+      - name: Execute the release with bump major
+        ### the check for is team member needs be wrapped in '' because its a string as per the actions docs https://github.com/tspascoal/get-user-teams-membership
+        if: inputs.bump_major == true && steps.checkMemberRole.outputs.isTeamMember == 'true'
+        # This RELEASER_TOKEN is an org secret that allows the action to run as kurtosisbot
+        # This is needed because kurtosisbot is the only one able to bypass branche protection rules and
+        # commit straight to master
+        run: kudet release ${{ secrets.RELEASER_TOKEN }}
+      - name: Execute the release without bumping major
+        if: inputs.bump_major == false && steps.checkMemberRole.outputs.isTeamMember == 'true'
+        run: kudet release ${{ secrets.RELEASER_TOKEN }}
