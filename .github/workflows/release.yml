@@ -7,10 +7,6 @@ on:
         description: 'Do you want to bump the major version on this release?'
         required: true
         type: boolean
-      GITHUB_TOKEN:
-        description: 'Token that has necessary permissions to execute release.'
-        required: true
-        type: string
 
 jobs:
   release:
