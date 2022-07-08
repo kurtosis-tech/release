@@ -1,7 +1,7 @@
 name: Release Workflow
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       bump_major:
         description: 'Do you want to bump the major version on this release?'
